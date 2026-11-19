@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 const logsDirectory = path.join(__dirname, '..', 'logs');
-const isVercel = process.env.VERCEL === '1';
-if (!isVercel) fs.mkdirSync(logsDirectory, { recursive: true });
+const useConsoleLogging = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+if (!useConsoleLogging) fs.mkdirSync(logsDirectory, { recursive: true });
 
 function notFound(request, response, next) {
   const error = new Error(`Route not found: ${request.method} ${request.originalUrl}`);
@@ -29,7 +29,7 @@ function errorHandler(error, request, response, next) {
     message = error.code === 'LIMIT_FILE_SIZE' ? 'Uploaded file is too large' : error.message;
   }
   const logEntry = `${new Date().toISOString()} ${request.method} ${request.path} ${statusCode} ${error.stack || error.message}\n`;
-  if (isVercel) {
+  if (useConsoleLogging) {
     console.error(logEntry.trimEnd());
   } else {
     fs.appendFile(path.join(logsDirectory, 'error.log'), logEntry, (writeError) => {
