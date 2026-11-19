@@ -3,6 +3,8 @@ const User = require('../models/User');
 const Doctor = require('../models/Doctor');
 const { uploadToCloudinary, removeFromCloudinary } = require('../utils/cloudinaryUpload');
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 function getTokenLifetime() {
   const expiresIn = process.env.JWT_EXPIRES_IN || '1d';
   const match = /^([1-9]\d*)(s|m|h|d)$/.exec(expiresIn);
@@ -15,9 +17,10 @@ function getTokenLifetime() {
 
 const cookieOptions = (maxAge) => ({
   httpOnly: true,
-  secure: process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  maxAge,
+  secure: process.env.COOKIE_SECURE === 'true' || isProduction,
+  // Separate Vercel frontend and API origins require cross-site cookies in production.
+  sameSite: isProduction ? 'none' : 'strict',
+  ...(maxAge ? { maxAge } : {}),
   path: '/'
 });
 
@@ -102,12 +105,7 @@ async function login(request, response) {
 }
 
 function logout(request, response) {
-  response.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/'
-  });
+  response.clearCookie('token', cookieOptions());
   return response.status(204).end();
 }
 

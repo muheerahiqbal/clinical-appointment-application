@@ -10,6 +10,10 @@ function logAudit(action, actorId, targetId) {
     actorId: String(actorId),
     targetId: String(targetId)
   }) + '\n';
+  if (process.env.VERCEL === '1') {
+    console.info(`Clinic audit event: ${entry.trimEnd()}`);
+    return;
+  }
   fs.appendFile(path.join(logsDirectory, 'audit.log'), entry, (error) => {
     if (error) console.error('Unable to write audit log:', error.message);
   });

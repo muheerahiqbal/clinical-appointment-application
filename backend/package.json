@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "REST API for clinic appointment management",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",

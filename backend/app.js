@@ -9,13 +9,12 @@ const { notFound, errorHandler } = require('./middlewares/errorMiddleware');
 
 const app = express();
 const allowedOrigins = new Set([
-  process.env.CLIENT_URL || 'http://localhost:5173',
+  process.env.CLIENT_URL,
+  'https://clinical-appointment-application.vercel.app',
   'http://localhost:5173',
   ...(process.env.CORS_ORIGINS || '')
     .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean)
-]);
+].filter(Boolean).map((origin) => origin.trim().replace(/\/+$/, '')));
 const windowMs = Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10);
 
 app.disable('x-powered-by');
@@ -34,6 +33,14 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use(cookieParser());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(configurePassport().initialize());
+if (process.env.VERCEL === '1') {
+  app.set('trust proxy', 1);
+  const connectDatabase = require('./config/db');
+  // Reuse the cached Atlas connection for warm Vercel function instances.
+  app.use((request, response, next) => {
+    connectDatabase().then(() => next()).catch(next);
+  });
+}
 const authRateLimit = rateLimit({
   windowMs: Number.isFinite(windowMs) && windowMs > 0 ? windowMs : 900000,
   limit: 10,
