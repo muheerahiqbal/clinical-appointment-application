@@ -1,7 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import api from '../api/axios';
+import api, { authTokenStorageKey } from '../api/axios';
 
 const AuthContext = createContext(null);
+
+function saveAuthToken(token) {
+  if (token) sessionStorage.setItem(authTokenStorageKey, token);
+  else sessionStorage.removeItem(authTokenStorageKey);
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -13,7 +18,8 @@ export function AuthProvider({ children }) {
       .then(({ data }) => {
         if (active) setUser(data.user);
       })
-      .catch(() => {
+      .catch((error) => {
+        if (error.response?.status === 401) saveAuthToken(null);
         if (active) setUser(null);
       })
       .finally(() => {
@@ -24,12 +30,14 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password });
+    saveAuthToken(data.token);
     setUser(data.user);
     return data.user;
   }, []);
 
   const register = useCallback(async (formData) => {
     const { data } = await api.post('/auth/register', formData);
+    saveAuthToken(data.token);
     setUser(data.user);
     return data.user;
   }, []);
@@ -38,6 +46,7 @@ export function AuthProvider({ children }) {
     try {
       await api.post('/auth/logout');
     } finally {
+      saveAuthToken(null);
       setUser(null);
     }
   }, []);
