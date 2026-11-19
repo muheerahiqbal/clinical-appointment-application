@@ -1,5 +1,6 @@
 node_modules/
 .env
+.vercel/
 logs/*.log
 npm-debug.log*
 coverage/
